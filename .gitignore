@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Excel / LibreOffice lock and temp files
+~$*.xlsx
+~$*.xls
+.~lock.*#
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+__MACOSX/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local exports from the app (downloaded copies with real data)
+exports/
+*.local.xlsx

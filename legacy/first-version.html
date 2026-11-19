@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>הנהלת חשבונות – סוכנות נסיעות</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f5;--card:#fff;--ink:#16302b;--mute:#5d7570;--line:#d8e3e0;--accent:#0e7c6b;--inc:#0e7c6b;--exp:#b4452f;--soft:#e6f2ef;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10201d;--card:#173029;--ink:#e6f2ef;--mute:#9bb5af;--line:#2a4a42;--accent:#4fc7b2;--inc:#4fc7b2;--exp:#f0917c;--soft:#1f3d35;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10201d;--card:#173029;--ink:#e6f2ef;--mute:#9bb5af;--line:#2a4a42;--accent:#4fc7b2;--inc:#4fc7b2;--exp:#f0917c;--soft:#1f3d35;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,Arial,sans-serif;line-height:1.5}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.6rem;margin:8px 0 16px}
+h2{font-size:1.1rem;margin:0 0 12px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+label{display:flex;flex-direction:column;font-size:.85rem;color:var(--mute);gap:4px}
+input,select,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+button{cursor:pointer;background:var(--accent);color:#fff;border:0;font-weight:700}
+button.ghost{background:transparent;color:var(--exp);border:1px solid var(--line);padding:4px 8px;font-weight:400}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wide{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500}
+.num{font-variant-numeric:tabular-nums}
+.inc{color:var(--inc)}.exp{color:var(--exp)}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.box{background:var(--soft);border-radius:8px;padding:12px}
+.box small{color:var(--mute);display:block}
+.box b{font-size:1.4rem}
+.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+.chk input{width:auto}
+.empty{color:var(--mute);padding:12px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>הנהלת חשבונות – סוכנות נסיעות</h1>
+
+<section>
+<h2>הגדרות</h2>
+<div class="grid">
+<label>אחוז מע״מ (%)<input id="vat" type="number" step="0.1" value="18"></label>
+<label>שם שותפה לחלוקה 50/50<input id="n1" value="שותפה א׳"></label>
+<label>החלק שלי ב־50/50 (%)<input id="p1" type="number" value="50"></label>
+<label>שם עובדת לחלוקה 60/40<input id="n2" value="עובדת ב׳"></label>
+<label>החלק שלי ב־60/40 (%)<input id="p2" type="number" value="60"></label>
+</div>
+</section>
+
+<section>
+<h2>הוספת תנועה</h2>
+<div class="grid">
+<label>סוג<select id="type"><option value="inc">הכנסה</option><option value="exp">הוצאה</option></select></label>
+<label>תאריך<input id="date" type="date"></label>
+<label>תיאור<input id="desc" placeholder="למשל: חבילת נופש לרומא"></label>
+<label>סכום (₪)<input id="amt" type="number" step="0.01"></label>
+<label>האם הסכום כולל מע״מ?<select id="incl"><option value="1">כולל מע״מ</option><option value="0">לפני מע״מ</option></select></label>
+<label>מע״מ<select id="rate"><option value="std">רגיל</option><option value="zero">פטור / 0%</option></select></label>
+<label>חלוקה<select id="grp"><option value="1">50/50</option><option value="2">60/40</option></select></label>
+<button id="add">הוספה</button>
+</div>
+</section>
+
+<section>
+<h2>סיכום</h2>
+<div class="sum" id="sum"></div>
+<div class="wide" style="margin-top:14px"><table id="split"></table></div>
+</section>
+
+<section>
+<h2>כל התנועות</h2>
+<div class="wide"><table id="list"></table></div>
+</section>
+<button class="ghost" id="reset">מחיקת כל הנתונים</button>
+</main>
+<script>
+var KEY='travel-books-v1', rows=[];
+try{var s=localStorage.getItem(KEY);if(s)rows=JSON.parse(s)||[];}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(rows));}catch(e){}}
+var $=function(i){return document.getElementById(i)};
+$('date').valueAsDate=new Date();
+function f(n){return n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₪'}
+function calc(r){
+  var v=parseFloat($('vat').value)||0, rate=r.rate==='zero'?0:v/100;
+  var net=r.incl==='1'?r.amt/(1+rate):r.amt;
+  return {net:net,vat:net*rate,gross:net*(1+rate)};
+}
+function render(){
+  var n1=$('n1').value,n2=$('n2').value,p1=parseFloat($('p1').value)||0,p2=parseFloat($('p2').value)||0;
+  var tb='<tr><th>תאריך</th><th>סוג</th><th>תיאור</th><th>לפני מע״מ</th><th>מע״מ</th><th>כולל מע״מ</th><th>חלוקה</th><th></th></tr>';
+  var iN=0,iV=0,eN=0,eV=0,g={1:0,2:0};
+  rows.forEach(function(r,i){
+    var c=calc(r),sg=r.type==='inc'?1:-1;
+    if(r.type==='inc'){iN+=c.net;iV+=c.vat}else{eN+=c.net;eV+=c.vat}
+    g[r.grp]+=sg*c.net;
+    tb+='<tr><td>'+r.date+'</td><td class="'+r.type+'">'+(r.type==='inc'?'הכנסה':'הוצאה')+'</td><td>'+esc(r.desc)+'</td><td class="num">'+f(c.net)+'</td><td class="num">'+f(c.vat)+'</td><td class="num">'+f(c.gross)+'</td><td>'+(r.grp==='1'?'50/50':'60/40')+'</td><td><button class="ghost" data-i="'+i+'">מחיקה</button></td></tr>';
+  });
+  $('list').innerHTML=rows.length?tb:'<tr><td class="empty">עדיין אין תנועות. הוסיפי הכנסה או הוצאה למעלה.</td></tr>';
+  var profit=iN-eN, vb=iV-eV;
+  $('sum').innerHTML=
+   box('הכנסות לפני מע״מ',f(iN),'inc')+box('הוצאות לפני מע״מ',f(eN),'exp')+
+   box('רווח לפני מע״מ',f(profit),profit>=0?'inc':'exp')+
+   box(vb>=0?'מע״מ לתשלום (עסקאות פחות תשומות)':'מע״מ להחזר',f(Math.abs(vb)),'')+
+   box('מע״מ עסקאות / תשומות',f(iV)+' / '+f(eV),'');
+  var my1=g[1]*p1/100,my2=g[2]*p2/100;
+  $('split').innerHTML='<tr><th>חלוקה</th><th>רווח לפני מע״מ</th><th>החלק שלי</th><th>החלק של</th><th>סכום לשותפה/עובדת</th></tr>'+
+   '<tr><td>50/50</td><td class="num">'+f(g[1])+'</td><td class="num">'+f(my1)+' ('+p1+'%)</td><td>'+esc(n1)+'</td><td class="num">'+f(g[1]-my1)+'</td></tr>'+
+   '<tr><td>60/40</td><td class="num">'+f(g[2])+'</td><td class="num">'+f(my2)+' ('+p2+'%)</td><td>'+esc(n2)+'</td><td class="num">'+f(g[2]-my2)+'</td></tr>'+
+   '<tr><th>סך הכול</th><th class="num">'+f(profit)+'</th><th class="num">'+f(my1+my2)+'</th><th></th><th class="num">'+f(profit-my1-my2)+'</th></tr>';
+}
+function box(t,v,c){return '<div class="box"><small>'+t+'</small><b class="'+c+'">'+v+'</b></div>'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+$('add').onclick=function(){
+  var a=parseFloat($('amt').value);
+  if(!a||a<=0){$('amt').focus();return}
+  rows.push({type:$('type').value,date:$('date').value,desc:$('desc').value,amt:a,incl:$('incl').value,rate:$('rate').value,grp:$('grp').value});
+  $('desc').value='';$('amt').value='';save();render();$('desc').focus();
+};
+$('list').onclick=function(e){var i=e.target.getAttribute('data-i');if(i!==null){rows.splice(+i,1);save();render()}};
+$('reset').onclick=function(){if(confirm('למחוק את כל התנועות?')){rows=[];save();render()}};
+['vat','n1','p1','n2','p2'].forEach(function(i){$(i).oninput=render});
+render();
+</script>
+</body>
+</html>

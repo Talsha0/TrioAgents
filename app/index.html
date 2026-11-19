@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סוכנים, תיקים ותשלומים</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f5;--card:#fff;--ink:#16302b;--mute:#5d7570;--line:#d8e3e0;--accent:#0e7c6b;--good:#0e7c6b;--bad:#b4452f;--soft:#e6f2ef;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10201d;--card:#173029;--ink:#e6f2ef;--mute:#9bb5af;--line:#2a4a42;--accent:#4fc7b2;--good:#4fc7b2;--bad:#f0917c;--soft:#1f3d35;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10201d;--card:#173029;--ink:#e6f2ef;--mute:#9bb5af;--line:#2a4a42;--accent:#4fc7b2;--good:#4fc7b2;--bad:#f0917c;--soft:#1f3d35;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,Arial,sans-serif;line-height:1.5}
+main{max-width:1020px;margin:0 auto;padding:16px}
+h1{font-size:1.6rem;margin:8px 0 16px}h2{font-size:1.1rem;margin:0 0 12px}h3{margin:0 0 10px;font-size:1.2rem}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+label{display:flex;flex-direction:column;font-size:.85rem;color:var(--mute);gap:4px}
+input,select,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+button{cursor:pointer;background:var(--accent);color:#fff;border:0;font-weight:700}
+button.g{background:transparent;color:var(--ink);border:1px solid var(--line);padding:4px 8px;font-weight:400;font-size:.85rem}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wide{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:500}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.box{background:var(--soft);border-radius:8px;padding:10px}.box small{color:var(--mute);display:block}.box b{font-size:1.2rem}
+.good{color:var(--good)}.bad{color:var(--bad)}.mute{color:var(--mute)}
+.tag{padding:2px 8px;border-radius:10px;background:var(--soft);font-size:.8rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>סוכנים, תיקים ותשלומים</h1>
+<p id="banner" class="mute">טוען…</p>
+
+<section><h2>הגדרות וסוכנים</h2>
+<div class="grid">
+<label>אחוז מע״מ (%)<input id="vat" type="number" step="0.1" value="18"></label>
+<label>שם סוכן/ת חדש/ה<input id="an" placeholder="שם"></label>
+<label>אחוז הסוכן/ת מהרווח<input id="ap" type="number" value="50"></label>
+<button id="addA">הוספת סוכן/ת</button>
+</div>
+<div id="alist" style="margin-top:10px"></div>
+</section>
+
+<section><h2 id="ch">תיק חדש</h2>
+<div class="grid">
+<label>סוכן/ת<select id="cA"></select></label>
+<label>חודש<input id="cM" type="month"></label>
+<label>שם התיק / לקוח<input id="cN"></label>
+<button id="addC">הוספת תיק</button>
+<button id="cancelC" class="g" style="display:none">ביטול תיקון</button>
+</div></section>
+
+<section><h2 id="lh">הוספת הכנסה או הוצאה</h2>
+<div class="grid">
+<label>שייך לתיק<select id="lC"></select></label>
+<label>סוג<select id="lT"><option value="exp">הוצאה</option><option value="inc">הכנסה</option></select></label>
+<label>תאריך<input id="lD" type="date"></label>
+<label>תיאור<input id="lN" placeholder="למשל: מלון ברומא"></label>
+<label>סכום (₪)<input id="lA" type="number" step="0.01"></label>
+<label>הסכום<select id="lI"><option value="1">כולל מע״מ</option><option value="0">לפני מע״מ</option></select></label>
+<label>מע״מ<select id="lR"><option value="s">רגיל</option><option value="z">פטור / 0%</option></select></label>
+<button id="addL">הוספה</button>
+<button id="cancelL" class="g" style="display:none">ביטול תיקון</button>
+</div>
+<p class="mute" style="margin:8px 0 0">אפשר להוסיף כמה הוצאות והכנסות לכל תיק, אחת אחת. המע״מ מחושב אוטומטית לכל שורה.</p>
+</section>
+
+<section><h2 id="ph">תשלום או הלוואה</h2>
+<div class="grid">
+<label>סוכן/ת<select id="pA"></select></label>
+<label>סוג<select id="pT"><option value="adv">מקדמה</option><option value="fin">תשלום סופי</option><option value="loan">הלוואה שנתתי</option><option value="rep">החזר הלוואה</option></select></label>
+<label>תיק (למקדמה / תשלום)<select id="pC"></select></label>
+<label>תאריך<input id="pD" type="date"></label>
+<label>סכום (₪)<input id="pS" type="number" step="0.01"></label>
+<button id="addP">הוספה</button>
+<button id="cancelP" class="g" style="display:none">ביטול תיקון</button>
+</div></section>
+
+<section><h2>מבט כללי</h2>
+<div class="sum" id="tot"></div>
+<label style="max-width:260px">סינון תיקים לפי חודש (היתרות תמיד מצטברות)<input id="fM" type="month"></label>
+</section>
+<div id="agents"></div>
+<section id="gensec"></section>
+<section><h2>ייצוא</h2><button id="xl">ייצוא לאקסל</button> <span id="xlmsg" class="mute"></span></section>
+<button class="g" id="reset">מחיקת כל הנתונים</button>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+var KEY='agents-books-v1',D={agents:[],cases:[],pays:[],lines:[]};
+try{var st=localStorage.getItem(KEY);if(st)D=JSON.parse(st)||D;}catch(e){}
+D.lines=D.lines||[];
+D.cases.forEach(function(c){if(c.inc!==undefined){
+ D.lines.push({id:uid(),caseId:c.id,type:'inc',desc:'הכנסה',amt:c.inc,incl:c.incl,rate:c.rate,date:(c.month||'')+'-01'});
+ if(c.exp>0)D.lines.push({id:uid(),caseId:c.id,type:'exp',desc:'הוצאות',amt:c.exp,incl:c.incl,rate:c.rate,date:(c.month||'')+'-01'});
+ delete c.inc;delete c.exp;delete c.incl;delete c.rate}});
+var COLS=['agents','cases','pays','lines'],SYNC={agents:{},cases:{},pays:{},lines:{}},DB=null,CANW=true,vt=null;
+function sj(o){return JSON.stringify(o,Object.keys(o).sort())}
+function setBanner(t,bad){var b=$('banner');b.textContent=t;b.className=bad?'bad':'mute'}
+function werr(e){setBanner('השמירה נכשלה'+(e&&e.code?' ('+e.code+')':'')+'. ייתכן שאין לך הרשאת עריכה, או שיש בעיית חיבור.',1)}
+function save(){
+ if(!DB){try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}return}
+ if(!CANW)return;
+ COLS.forEach(function(c){var seen={};
+  D[c].forEach(function(it){seen[it.id]=1;var js=sj(it);if(SYNC[c][it.id]!==js){SYNC[c][it.id]=js;DB.collection(c).doc(it.id).set(JSON.parse(js)).catch(werr)}});
+  Object.keys(SYNC[c]).forEach(function(id){if(!seen[id]){delete SYNC[c][id];DB.collection(c).doc(id).delete().catch(werr)}})})}
+function saveVat(){if(!DB||!CANW)return;clearTimeout(vt);vt=setTimeout(function(){DB.doc('settings/main').set({vat:parseFloat($('vat').value)||0}).catch(werr)},600)}
+function applyRO(){if(CANW)return;document.querySelectorAll('input,select,button').forEach(function(el){if(el.id==='xl'||el.id==='fM'||el.getAttribute('data-t')==='xc')return;el.disabled=true})}
+var $=function(i){return document.getElementById(i)};
+$('lD').valueAsDate=new Date();$('pD').valueAsDate=new Date();$('cM').value=new Date().toISOString().slice(0,7);
+function f(n){return n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₪'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function vr(l){var v=parseFloat($('vat').value)||0;return l.rate==='z'?0:v/100}
+function lc(l){var r=vr(l),n=l.incl==='1'?l.amt/(1+r):l.amt;return{net:n,vat:n*r,gross:n*(1+r),r:r}}
+function cc(id){var o={iN:0,iV:0,eN:0,eV:0,profit:0};D.lines.forEach(function(l){if(l.caseId!==id)return;var x=lc(l);if(l.type==='inc'){o.iN+=x.net;o.iV+=x.vat}else{o.eN+=x.net;o.eV+=x.vat}});o.profit=o.iN-o.eN;return o}
+function box(t,v,cl){return '<div class="box"><small>'+t+'</small><b class="'+(cl||'')+'">'+v+'</b></div>'}
+function sumP(fn){return D.pays.filter(fn).reduce(function(s,p){return s+p.amt},0)}
+function agentName(id){var a=D.agents.filter(function(a){return a.id===id})[0];return a?a.name:''}
+function lineRow(l){var x=lc(l);return '<tr><td>'+(l.date||'')+'</td><td class="'+(l.type==='inc'?'good':'bad')+'">'+(l.type==='inc'?'הכנסה':'הוצאה')+'</td><td>'+esc(l.desc||'')+'</td><td>'+f(x.net)+'</td><td>'+(x.r*100).toFixed(0)+'%</td><td>'+f(x.vat)+'</td><td>'+f(x.gross)+'</td><td><button class="g" data-t="edl" data-i="'+l.id+'">תיקון</button> <button class="g" data-t="dell" data-i="'+l.id+'">מחיקה</button></td></tr>'}
+var LH='<tr><th>תאריך</th><th>סוג</th><th>תיאור</th><th>לפני מע״מ</th><th>מע״מ</th><th>סכום מע״מ</th><th>כולל מע״מ</th><th></th></tr>';
+function fillCases(){var a=$('pA').value;$('pC').innerHTML='<option value="">ללא תיק ספציפי</option>'+D.cases.filter(function(c){return c.agent===a}).map(function(c){return '<option value="'+c.id+'">'+c.month+' – '+esc(c.name)+'</option>'}).join('')}
+function render(){
+ var opts=D.agents.map(function(a){return '<option value="'+a.id+'">'+esc(a.name)+'</option>'}).join('');
+ var k1=$('cA').value,k2=$('pA').value,k3=$('lC').value;
+ $('cA').innerHTML=opts;$('pA').innerHTML=opts;if(k1)$('cA').value=k1;if(k2)$('pA').value=k2;
+ $('lC').innerHTML='<option value="">הוצאה / הכנסה כללית (ללא תיק)</option>'+D.cases.map(function(c){return '<option value="'+c.id+'">'+esc(agentName(c.agent))+' – '+c.month+' – '+esc(c.name)+'</option>'}).join('');
+ if(k3)$('lC').value=k3;
+ fillCases();
+ $('alist').innerHTML=D.agents.length?D.agents.map(function(a){return '<span class="tag">'+esc(a.name)+' – '+a.pct+'% לסוכן/ת, '+(100-a.pct)+'% לי</span> '}).join(' '):'<span class="mute">הוסיפי סוכן/ת כדי להתחיל.</span>';
+ var T={iN:0,eN:0,iV:0,eV:0,my:0},fm=$('fM').value,h='';
+ D.agents.forEach(function(a){
+  var cs=D.cases.filter(function(c){return c.agent===a.id}),earned=0,openPaid=0,openExp=0,rem=0,rows='';
+  cs.forEach(function(c){var x=cc(c.id);T.iN+=x.iN;T.eN+=x.eN;T.iV+=x.iV;T.eV+=x.eV;
+   var share=x.profit*a.pct/100;T.my+=x.profit-share;
+   var paid=sumP(function(p){return p.caseId===c.id&&(p.type==='adv'||p.type==='fin')}),left=share-paid;
+   if(c.closed){earned+=share;rem+=left}else{openPaid+=paid;openExp+=share}
+   if(fm&&c.month!==fm)return;
+   var stt=c.closed?(left<-0.005?'<b class="bad">שולם יותר מדי: '+f(-left)+'</b>':Math.abs(left)<0.005?'<span class="good">שולם במלואו</span>':'נשאר לשלם: '+f(left))
+     :(paid>share+0.005?'<b class="bad">מקדמה גבוהה מהחלק: '+f(paid-share)+'</b>':'<span class="mute">פתוח, מקדמות: '+f(paid)+'</span>');
+   var ls=D.lines.filter(function(l){return l.caseId===c.id});
+   rows+='<tr><td>'+c.month+'</td><td>'+esc(c.name)+'</td><td>'+f(x.profit)+'</td><td>'+f(share)+'</td><td>'+f(paid)+'</td><td>'+stt+'</td><td><button class="g" data-t="close" data-i="'+c.id+'">'+(c.closed?'פתיחה מחדש':'סגירת תיק')+'</button> <button class="g" data-t="edc" data-i="'+c.id+'">תיקון תיק</button> <button class="g" data-t="xc" data-i="'+c.id+'">ייצוא התיק לאקסל</button> <button class="g" data-t="delc" data-i="'+c.id+'">מחיקה</button></td></tr>'+
+   '<tr><td colspan="7"><div class="wide"><table><tr><th>סיכום התיק</th><th>לפני מע״מ</th><th>מע״מ</th><th>כולל מע״מ</th></tr><tr><td class="good">הכנסות</td><td>'+f(x.iN)+'</td><td>'+f(x.iV)+'</td><td>'+f(x.iN+x.iV)+'</td></tr><tr><td class="bad">הוצאות</td><td>'+f(x.eN)+'</td><td>'+f(x.eV)+'</td><td>'+f(x.eN+x.eV)+'</td></tr><tr><th>הפרש (רווח / מע״מ לתשלום)</th><th>'+f(x.iN-x.eN)+'</th><th>'+f(x.iV-x.eV)+'</th><th>'+f((x.iN+x.iV)-(x.eN+x.eV))+'</th></tr></table></div><details><summary>פירוט השורות בתיק ('+ls.length+')</summary><div class="wide"><table>'+(ls.length?LH+ls.map(lineRow).join(''):'<tr><td class="mute">עדיין לא הוזנו שורות.</td></tr>')+'</table></div></details></td></tr>'});
+  var gen=sumP(function(p){return p.agent===a.id&&!p.caseId&&(p.type==='adv'||p.type==='fin')});
+  rem-=gen;
+  var loan=sumP(function(p){return p.agent===a.id&&p.type==='loan'})-sumP(function(p){return p.agent===a.id&&p.type==='rep'});
+  var net=rem-loan;
+  var pr=D.pays.filter(function(p){return p.agent===a.id}).map(function(p){
+   var tn={adv:'מקדמה',fin:'תשלום סופי',loan:'הלוואה',rep:'החזר הלוואה'}[p.type],c=D.cases.filter(function(c){return c.id===p.caseId})[0];
+   return '<tr><td>'+p.date+'</td><td>'+tn+'</td><td>'+(c?esc(c.name):'–')+'</td><td>'+f(p.amt)+'</td><td><button class="g" data-t="edp" data-i="'+p.id+'">תיקון</button> <button class="g" data-t="delp" data-i="'+p.id+'">מחיקה</button></td></tr>'}).join('');
+  h+='<section><h3>'+esc(a.name)+' <span class="tag">'+a.pct+'%</span> <button class="g" data-t="dela" data-i="'+a.id+'">מחיקת סוכן/ת</button></h3><div class="sum">'+
+   box('חלק מתיקים סגורים',f(earned))+box('יתרה לתשלום (תיקים סגורים)',f(rem),rem<-0.005?'bad':'')+
+   box('חוב הלוואה פתוח',f(loan),loan>0.005?'bad':'')+
+   box('נטו אחרי קיזוז הלוואה',f(net),net<-0.005?'bad':'good')+
+   box('חלק צפוי מתיקים פתוחים',f(openExp))+box('מקדמות על תיקים פתוחים',f(openPaid))+'</div>'+
+   (net<-0.005?'<p class="bad"><b>שימי לב: שולם לסוכן/ת יותר ממה שמגיע, בפער של '+f(-net)+'.</b></p>':'')+
+   '<div class="wide"><table><tr><th>חודש</th><th>תיק</th><th>רווח לפני מע״מ</th><th>חלק הסוכן/ת</th><th>שולם</th><th>מצב</th><th></th></tr>'+(rows||'<tr><td colspan="7" class="mute">אין תיקים להצגה.</td></tr>')+'</table></div>'+
+   (pr?'<details style="margin-top:10px"><summary>תשלומים והלוואות</summary><div class="wide"><table><tr><th>תאריך</th><th>סוג</th><th>תיק</th><th>סכום</th><th></th></tr>'+pr+'</table></div></details>':'')+'</section>'});
+ $('agents').innerHTML=h;
+ var gl=D.lines.filter(function(l){return !l.caseId});
+ gl.forEach(function(l){var x=lc(l);if(l.type==='inc'){T.iN+=x.net;T.iV+=x.vat;T.my+=x.net}else{T.eN+=x.net;T.eV+=x.vat;T.my-=x.net}});
+ $('gensec').innerHTML=gl.length?'<h2>הכנסות והוצאות כלליות (ללא תיק, כולן שלי)</h2><div class="wide"><table>'+LH+gl.map(lineRow).join('')+'</table></div>':'';
+ $('gensec').style.display=gl.length?'':'none';
+ var vb=T.iV-T.eV;
+ $('tot').innerHTML=box('הכנסות לפני מע״מ',f(T.iN))+box('הוצאות לפני מע״מ',f(T.eN))+box('רווח לפני מע״מ',f(T.iN-T.eN))+box('החלק שלי מהרווח',f(T.my),'good')+box('מע״מ עסקאות / תשומות',f(T.iV)+' / '+f(T.eV))+box(vb>=0?'מע״מ לתשלום':'מע״מ להחזר',f(Math.abs(vb)));
+}
+$('pA').onchange=fillCases;
+$('addA').onclick=function(){var n=$('an').value.trim(),p=parseFloat($('ap').value);if(!n||isNaN(p)){$('an').focus();return}D.agents.push({id:uid(),name:n,pct:p});$('an').value='';save();render()};
+$('addC').onclick=function(){if(!$('cA').value){$('an').focus();return}
+ if(editC){var ec=D.cases.filter(function(c){return c.id===editC})[0];
+  if(ec){ec.agent=$('cA').value;ec.month=$('cM').value;ec.name=$('cN').value||'תיק';D.pays.forEach(function(p){if(p.caseId===editC)p.agent=ec.agent})}
+  stopEditC();save();render();return}
+ var id=uid();D.cases.push({id:id,agent:$('cA').value,month:$('cM').value,name:$('cN').value||'תיק',closed:false});
+ $('cN').value='';save();render();$('lC').value=id;$('lN').focus()};
+$('addL').onclick=function(){var a=parseFloat($('lA').value);if(!a||a<=0){$('lA').focus();return}
+ var o={caseId:$('lC').value,type:$('lT').value,date:$('lD').value,desc:$('lN').value,amt:a,incl:$('lI').value,rate:$('lR').value};
+ if(editId){D.lines.forEach(function(l){if(l.id===editId)Object.assign(l,o)});stopEdit()}else{o.id=uid();D.lines.push(o)}
+ $('lN').value='';$('lA').value='';save();render();$('lN').focus()};
+$('addP').onclick=function(){var s=parseFloat($('pS').value);if(!$('pA').value||!s||s<=0){$('pS').focus();return}
+ var t=$('pT').value;var o={agent:$('pA').value,type:t,caseId:(t==='adv'||t==='fin')?$('pC').value:'',date:$('pD').value,amt:s};
+ if(editP){D.pays.forEach(function(p){if(p.id===editP)Object.assign(p,o)});stopEditP()}else{o.id=uid();D.pays.push(o)}
+ $('pS').value='';save();render()};
+document.body.addEventListener('click',function(e){var t=e.target.getAttribute('data-t'),i=e.target.getAttribute('data-i');if(!t)return;if(t==='edp'){startEditP(i);return}if(t==='edc'){startEditC(i);return}if(t==='edl'){startEdit(i);return}if(t==='xc'){exportCase(i);return}
+ if(t==='close')D.cases.forEach(function(c){if(c.id===i)c.closed=!c.closed});
+ if(t==='delc'&&confirm('למחוק את התיק?')){D.cases=D.cases.filter(function(c){return c.id!==i});D.pays=D.pays.filter(function(p){return p.caseId!==i});D.lines=D.lines.filter(function(l){return l.caseId!==i})}
+ if(t==='delp')D.pays=D.pays.filter(function(p){return p.id!==i});
+ if(t==='dell')D.lines=D.lines.filter(function(l){return l.id!==i});
+ if(t==='dela'&&confirm('למחוק את הסוכן/ת עם כל התיקים והתשלומים?')){var ids=D.cases.filter(function(c){return c.agent===i}).map(function(c){return c.id});D.agents=D.agents.filter(function(a){return a.id!==i});D.cases=D.cases.filter(function(c){return c.agent!==i});D.pays=D.pays.filter(function(p){return p.agent!==i});D.lines=D.lines.filter(function(l){return ids.indexOf(l.caseId)<0})}
+ save();render()});
+$('reset').onclick=function(){if(confirm('למחוק הכול?')){D={agents:[],cases:[],pays:[],lines:[]};save();render()}};
+$('vat').oninput=function(){render();applyRO();saveVat()};$('fM').oninput=render;
+var DL=null,editId=null,editC=null,editP=null;
+try{if(window.claude&&claude.use)claude.use('downloads').then(function(d){DL=d;if(!d)$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו. פתחי את הקישור של הכלי בדפדפן.'}).catch(function(){})}catch(e){}
+$('xl').onclick=function(){
+ if(typeof XLSX==='undefined'){$('xlmsg').textContent='ספריית האקסל לא נטענה.';return}
+ if(!DL){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
+ var r2=function(n){return Math.round(n*100)/100};
+ var cn=function(id){var c=D.cases.filter(function(c){return c.id===id})[0];return c?c:null};
+ var L=[['תאריך','סוכן/ת','חודש תיק','תיק','סוג','תיאור','סכום לפני מע״מ','אחוז מע״מ','סכום מע״מ','סכום כולל מע״מ']];
+ D.lines.forEach(function(l){var x=lc(l),c=cn(l.caseId);L.push([l.date||'',c?agentName(c.agent):'',c?c.month:'',c?c.name:'כללי',l.type==='inc'?'הכנסה':'הוצאה',l.desc||'',r2(x.net),x.r,r2(x.vat),r2(x.gross)])});
+ var S=[['סוכן/ת','אחוז סוכן (%)','חודש','תיק','סטטוס','הכנסות לפני מע״מ','מע״מ הכנסות','הכנסות כולל מע״מ','הוצאות לפני מע״מ','מע״מ הוצאות','הוצאות כולל מע״מ','רווח לפני מע״מ','מע״מ לתשלום (שלילי = להחזר)','חלק הסוכן/ת','שולם','יתרה (חלק פחות שולם)']];
+ D.cases.forEach(function(c){var a=D.agents.filter(function(a){return a.id===c.agent})[0]||{pct:0,name:''},x=cc(c.id),sh=x.profit*a.pct/100,pd=sumP(function(p){return p.caseId===c.id&&(p.type==='adv'||p.type==='fin')});
+  S.push([a.name,a.pct,c.month,c.name,c.closed?'סגור':'פתוח',r2(x.iN),r2(x.iV),r2(x.iN+x.iV),r2(x.eN),r2(x.eV),r2(x.eN+x.eV),r2(x.profit),r2(x.iV-x.eV),r2(sh),r2(pd),r2(sh-pd)])});
+ var P=[['תאריך','סוכן/ת','סוג','תיק','סכום']];
+ D.pays.forEach(function(p){var c=cn(p.caseId);P.push([p.date,agentName(p.agent),{adv:'מקדמה',fin:'תשלום סופי',loan:'הלוואה',rep:'החזר הלוואה'}[p.type],c?c.name:'',r2(p.amt)])});
+ var A=[['סוכן/ת','חלק מתיקים סגורים','תשלומים ששולמו (כללי)','יתרה לתשלום','חוב הלוואה','נטו אחרי קיזוז הלוואה']];
+ D.agents.forEach(function(a){var er=0,rem=0;D.cases.forEach(function(c){if(c.agent===a.id&&c.closed){var sh=cc(c.id).profit*a.pct/100;er+=sh;rem+=sh-sumP(function(p){return p.caseId===c.id&&(p.type==='adv'||p.type==='fin')})}});
+  var g=sumP(function(p){return p.agent===a.id&&!p.caseId&&(p.type==='adv'||p.type==='fin')}),ln=sumP(function(p){return p.agent===a.id&&p.type==='loan'})-sumP(function(p){return p.agent===a.id&&p.type==='rep'});
+  A.push([a.name,r2(er),r2(g),r2(rem-g),r2(ln),r2(rem-g-ln)])});
+ var iV=0,eV=0,iN=0,eN=0;D.lines.forEach(function(l){var x=lc(l);if(l.type==='inc'){iN+=x.net;iV+=x.vat}else{eN+=x.net;eV+=x.vat}});
+ var V=[['פריט','סכום'],['הכנסות לפני מע״מ',r2(iN)],['הוצאות לפני מע״מ',r2(eN)],['רווח לפני מע״מ',r2(iN-eN)],['מע״מ עסקאות',r2(iV)],['מע״מ תשומות',r2(eV)],['מע״מ לתשלום (שלילי = להחזר)',r2(iV-eV)]];
+ var isP=function(p){return p.type==='adv'||p.type==='fin'};
+ var M=[['חודש','סוכן/ת','תיקים','מתוכם סגורים','הכנסות לפני מע״מ','הוצאות לפני מע״מ','רווח לפני מע״מ','מע״מ לתשלום (שלילי = להחזר)','חלק הסוכן/ת','שולם','יתרה']],mo={};
+ var rr=function(r){return r.map(function(v,i){return i>=4?r2(v):v})};
+ D.cases.forEach(function(c){mo[c.month]=1});
+ Object.keys(mo).sort().forEach(function(m){var tot=[m,'סה״כ חודש',0,0,0,0,0,0,0,0,0];
+  D.agents.forEach(function(a){var cs=D.cases.filter(function(c){return c.agent===a.id&&c.month===m});if(!cs.length)return;
+   var r=[m,a.name,cs.length,cs.filter(function(c){return c.closed}).length,0,0,0,0,0,0,0];
+   cs.forEach(function(c){var x=cc(c.id);r[4]+=x.iN;r[5]+=x.eN;r[6]+=x.profit;r[7]+=x.iV-x.eV;r[8]+=x.profit*a.pct/100;r[9]+=sumP(function(p){return p.caseId===c.id&&isP(p)})});
+   r[9]+=sumP(function(p){return p.agent===a.id&&!p.caseId&&isP(p)&&(p.date||'').slice(0,7)===m});
+   r[10]=r[8]-r[9];for(var i=2;i<=10;i++)tot[i]+=r[i];M.push(rr(r))});
+  M.push(rr(tot))});
+ var wb=XLSX.utils.book_new();
+ [['שורות',L],['סיכום חודשי',M],['סיכום תיקים',S],['סיכום סוכנים',A],['תשלומים והלוואות',P],['סיכום מעמ',V]].forEach(function(x){var ws=XLSX.utils.aoa_to_sheet(x[1]);ws['!cols']=x[1][0].map(function(){return{wch:20}});XLSX.utils.book_append_sheet(wb,ws,x[0])});
+ wb.Workbook={Views:[{RTL:true}]};
+ var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+ DL.save({filename:'הנהלת-חשבונות-'+new Date().toISOString().slice(0,10)+'.xlsx',data:buf}).then(function(){$('xlmsg').textContent='הקובץ נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})};
+function startEditP(id){var p=D.pays.filter(function(p){return p.id===id})[0];if(!p)return;
+ editP=id;$('pA').value=p.agent;fillCases();$('pT').value=p.type;$('pC').value=p.caseId||'';$('pD').value=p.date||'';$('pS').value=p.amt;
+ $('addP').textContent='שמירת תיקון';$('cancelP').style.display='';$('ph').textContent='תיקון תשלום / הלוואה';
+ $('pS').scrollIntoView({behavior:'smooth',block:'center'});$('pS').focus()}
+function stopEditP(){editP=null;$('addP').textContent='הוספה';$('cancelP').style.display='none';$('ph').textContent='תשלום או הלוואה';$('pS').value=''}
+$('cancelP').onclick=stopEditP;
+function startEditC(id){var c=D.cases.filter(function(c){return c.id===id})[0];if(!c)return;
+ editC=id;$('cA').value=c.agent;$('cM').value=c.month;$('cN').value=c.name;
+ $('addC').textContent='שמירת תיקון תיק';$('cancelC').style.display='';$('ch').textContent='תיקון תיק (סוכן/ת, חודש או שם)';
+ $('cM').scrollIntoView({behavior:'smooth',block:'center'});$('cM').focus()}
+function stopEditC(){editC=null;$('addC').textContent='הוספת תיק';$('cancelC').style.display='none';$('ch').textContent='תיק חדש';$('cN').value=''}
+$('cancelC').onclick=stopEditC;
+function startEdit(id){var l=D.lines.filter(function(l){return l.id===id})[0];if(!l)return;
+ editId=id;$('lC').value=l.caseId||'';$('lT').value=l.type;$('lD').value=l.date||'';$('lN').value=l.desc||'';$('lA').value=l.amt;$('lI').value=l.incl;$('lR').value=l.rate;
+ $('addL').textContent='שמירת תיקון';$('cancelL').style.display='';$('lh').textContent='תיקון שורה';
+ $('lA').scrollIntoView({behavior:'smooth',block:'center'});$('lA').focus()}
+function stopEdit(){editId=null;$('addL').textContent='הוספה';$('cancelL').style.display='none';$('lh').textContent='הוספת הכנסה או הוצאה';$('lN').value='';$('lA').value=''}
+$('cancelL').onclick=stopEdit;
+function exportCase(id){
+ if(typeof XLSX==='undefined'||!DL){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
+ var r2=function(n){return Math.round(n*100)/100};
+ var c=D.cases.filter(function(c){return c.id===id})[0],a=D.agents.filter(function(a){return a.id===c.agent})[0]||{pct:0,name:''};
+ var x=cc(id),sh=x.profit*a.pct/100,ps=D.pays.filter(function(p){return p.caseId===id}),pd=ps.reduce(function(t,p){return t+((p.type==='adv'||p.type==='fin')?p.amt:0)},0);
+ var A=[['סגירת תיק'],['סוכן/ת',a.name],['אחוז הסוכן/ת (%)',a.pct],['חודש',c.month],['תיק',c.name],['סטטוס',c.closed?'סגור':'פתוח'],[],
+  ['סיכום','לפני מע״מ','מע״מ','כולל מע״מ'],['הכנסות',r2(x.iN),r2(x.iV),r2(x.iN+x.iV)],['הוצאות',r2(x.eN),r2(x.eV),r2(x.eN+x.eV)],['הפרש',r2(x.iN-x.eN),r2(x.iV-x.eV),r2(x.iN+x.iV-x.eN-x.eV)],[],
+  ['רווח לחלוקה (לפני מע״מ)',r2(x.profit)],['חלק הסוכן/ת',r2(sh)],['החלק שלי',r2(x.profit-sh)],['שולם עד כה (מקדמות ותשלומים)',r2(pd)],['יתרה לתשלום (שלילי = שולם יותר מדי)',r2(sh-pd)]];
+ var L=[['תאריך','סוג','תיאור','לפני מע״מ','אחוז מע״מ','סכום מע״מ','כולל מע״מ']];
+ D.lines.filter(function(l){return l.caseId===id}).forEach(function(l){var y=lc(l);L.push([l.date||'',l.type==='inc'?'הכנסה':'הוצאה',l.desc||'',r2(y.net),y.r,r2(y.vat),r2(y.gross)])});
+ var P=[['תאריך','סוג','סכום']];
+ ps.forEach(function(p){P.push([p.date,{adv:'מקדמה',fin:'תשלום סופי',loan:'הלוואה',rep:'החזר הלוואה'}[p.type],r2(p.amt)])});
+ var wb=XLSX.utils.book_new();
+ [['סגירת תיק',A],['שורות',L],['תשלומים',P]].forEach(function(z){var ws=XLSX.utils.aoa_to_sheet(z[1]);ws['!cols']=[{wch:34},{wch:18},{wch:18},{wch:18},{wch:14},{wch:14},{wch:16}];XLSX.utils.book_append_sheet(wb,ws,z[0])});
+ wb.Workbook={Views:[{RTL:true}]};
+ var nm=('תיק-'+c.name+'-'+c.month).replace(/[\\\/:*?"<>|]/g,'');
+ DL.save({filename:nm+'.xlsx',data:XLSX.write(wb,{bookType:'xlsx',type:'array'})}).then(function(){$('xlmsg').textContent='הקובץ נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})}
+(async function(){
+ try{
+  var db=window.claude&&claude.use?await claude.use('db'):null;
+  if(!db){setBanner('עבודה מקומית בלבד: הנתונים נשמרים רק בדפדפן הזה ולא משותפים.');return}
+  var us=await claude.use('user');
+  if(us){var cw=await us.can('data.write');if(cw===false)CANW=false}
+  var LOCAL=D,a0=await db.collection('agents').get(),c0=await db.collection('cases').get();
+  DB=db;
+  if(a0.empty&&c0.empty&&LOCAL.agents.length&&CANW){D=LOCAL;save()}
+  COLS.forEach(function(c){db.collection(c).onSnapshot(function(sn){
+   var arr=[];SYNC[c]={};
+   sn.docs.forEach(function(d){var o=JSON.parse(JSON.stringify(d.data()));o.id=o.id||d.id;arr.push(o);SYNC[c][o.id]=sj(o)});
+   arr.sort(function(x,y){return x.id<y.id?-1:1});D[c]=arr;render();applyRO()},werr)});
+  db.doc('settings/main').onSnapshot(function(d){if(d.exists){var v=d.data().vat;if(typeof v==='number'&&document.activeElement!==$('vat')){$('vat').value=v;render();applyRO()}}},werr);
+  setBanner(CANW?'הנתונים משותפים: כל מי שהוזמנה ומחוברת רואה את אותם נתונים, והשינויים מתעדכנים מיד.':'יש לך הרשאת צפייה בלבד. אפשר לייצא לאקסל אבל לא לשנות נתונים.',!CANW);
+  applyRO();
+ }catch(e){setBanner('לא ניתן להתחבר לנתונים המשותפים, עובדים מקומית בלבד.',1)}
+})();
+render();
+</script>
+</body>
+</html>
