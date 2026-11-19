@@ -10,8 +10,8 @@
 //
 // Leave supabaseUrl empty to run without the online database (data stays in this browser only).
 window.APP_CONFIG = {
-  supabaseUrl: '',
-  supabaseKey: '',
+  supabaseUrl: 'https://prqlodbdkrajgoevdpcm.supabase.co',
+  supabaseKey: 'sb_publishable_hyLardE50NJpvOh-MQXsVA_P52D1rNh',
 
   // Login methods shown on the sign-in screen.
   loginWithGoogle: true,

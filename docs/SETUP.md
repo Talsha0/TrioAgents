@@ -59,7 +59,7 @@ These two values are meant to be public. The login and the database rules protec
    - **Root Directory:** click **Edit** and choose `app`.
    - **Framework Preset:** `Other`.
    - Leave the build settings empty. There is nothing to build.
-4. Click **Deploy**. You get an address like `https://trioagents.vercel.app`.
+4. Click **Deploy**. You get an address like `https://trioagents-app.vercel.app`.
 
 Vercel publishes the `main` branch. Every push to `main` updates the site within a minute.
 
@@ -67,8 +67,8 @@ Vercel publishes the `main` branch. Every push to `main` updates the site within
 
 In Supabase: **Authentication → URL Configuration**.
 
-- **Site URL:** your Vercel address, for example `https://trioagents.vercel.app`.
-- **Redirect URLs:** add `https://trioagents.vercel.app/**`.
+- **Site URL:** your Vercel address, for example `https://trioagents-app.vercel.app`.
+- **Redirect URLs:** add `https://trioagents-app.vercel.app/**`.
 
 Without this step, Google login and email links send people to the wrong place.
 
@@ -83,7 +83,7 @@ Without this step, Google login and email links send people to the wrong place.
      If you skip this, only people you list as "test users" can log in.
      The app only asks for name and email, so Google doesn't need to review it.
 3. **Clients → Create client → Web application**:
-   - **Authorized JavaScript origins:** `https://trioagents.vercel.app`
+   - **Authorized JavaScript origins:** `https://trioagents-app.vercel.app`
    - **Authorized redirect URIs:** `https://<your-project>.supabase.co/auth/v1/callback`.
      Supabase shows this exact address on its Google provider page.
 4. Copy the **Client ID** and **Client secret**.
