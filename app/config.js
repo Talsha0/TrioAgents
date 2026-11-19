@@ -15,5 +15,5 @@ window.APP_CONFIG = {
 
   // Login methods shown on the sign-in screen.
   loginWithGoogle: true,
-  loginWithEmail: true
+  loginWithEmail: false
 };
