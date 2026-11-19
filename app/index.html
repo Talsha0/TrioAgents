@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>סוכנים, תיקים ותשלומים</title>
+<script src="config.js"></script>
+<script>if(window.APP_CONFIG&&APP_CONFIG.supabaseUrl)document.documentElement.className+=" cloud"</script>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f6f5;--card:#fff;--ink:#16302b;--mute:#5d7570;--line:#d8e3e0;--accent:#0e7c6b;--good:#0e7c6b;--bad:#b4452f;--soft:#e6f2ef;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
@@ -27,10 +29,46 @@ th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);white
 .good{color:var(--good)}.bad{color:var(--bad)}.mute{color:var(--mute)}
 .tag{padding:2px 8px;border-radius:10px;background:var(--soft);font-size:.8rem}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+[hidden]{display:none!important}
+html.cloud:not(.ready) #app{display:none}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+#gate{max-width:420px;margin:8vh auto 0;padding:16px}#gate section{display:flex;flex-direction:column;gap:12px}
+#gate input{width:100%}#gate button{width:100%;padding:10px}button.gg{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.or{text-align:center;color:var(--mute);font-size:.85rem}button:disabled{opacity:.6;cursor:default}
+#ubar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:8px;font-size:.9rem}
 </style>
 </head>
 <body>
-<main>
+<main id="gate" hidden>
+<h1>סוכנים, תיקים ותשלומים</h1>
+<section id="gLoading"><p class="mute">טוען…</p></section>
+<section id="gLogin" hidden>
+<h2>כניסה</h2>
+<button id="gGoogle" class="gg">כניסה עם Google</button>
+<div id="gOr" class="or">או</div>
+<div id="gEmailBox" style="display:flex;flex-direction:column;gap:8px">
+<label>מייל<input id="gEmail" type="email" autocomplete="email" inputmode="email" dir="ltr"></label>
+<button id="gSend">שליחת קוד כניסה למייל</button>
+</div>
+</section>
+<section id="gCode" hidden>
+<h2>הקלדת הקוד</h2>
+<p class="mute" style="margin:0">שלחנו קוד ל־<b id="gCodeEmail" dir="ltr"></b>. אפשר גם ללחוץ על הקישור שבמייל.</p>
+<label>קוד<input id="gCodeIn" inputmode="numeric" autocomplete="one-time-code" dir="ltr"></label>
+<button id="gVerify">כניסה</button>
+<button id="gBack" class="g">חזרה</button>
+</section>
+<section id="gPending" hidden>
+<h2>ממתין לאישור</h2>
+<p style="margin:0">נכנסת בתור <b id="gPendEmail" dir="ltr"></b>.</p>
+<p class="mute" style="margin:0">המנהל/ת צריך/ה לאשר אותך פעם אחת. אחרי האישור הדף ייפתח לבד, או לחצו "בדיקה שוב".</p>
+<button id="gRecheck">בדיקה שוב</button>
+<button id="gOut" class="g">התנתקות</button>
+</section>
+<p id="gmsg" class="mute"></p>
+</main>
+<main id="app">
+<div id="ubar" hidden><span class="mute">מחובר/ת: <b id="uName"></b></span><span><button id="uAdmin" class="g" hidden>ניהול משתמשים</button> <button id="uOut" class="g">התנתקות</button></span></div>
 <h1>סוכנים, תיקים ותשלומים</h1>
 <p id="banner" class="mute">טוען…</p>
 
@@ -85,10 +123,17 @@ th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);white
 </section>
 <div id="agents"></div>
 <section id="gensec"></section>
-<section><h2>ייצוא</h2><button id="xl">ייצוא לאקסל</button> <span id="xlmsg" class="mute"></span></section>
+<section id="users" hidden><h2>ניהול משתמשים <button class="g" id="usRefresh">רענון</button></h2>
+<p class="mute" style="margin-top:0">משתמשים חדשים נכנסים עם Google או מייל ומופיעים כאן כממתינים. מאשרים פעם אחת.</p>
+<div id="usList"></div></section>
+<section><h2>ייצוא וגיבוי</h2><button id="xl">ייצוא לאקסל</button> <button id="bk" class="g">הורדת גיבוי (JSON)</button>
+<label id="impWrap" class="g" style="display:inline-flex;flex-direction:row;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:.85rem;color:var(--ink)">שחזור מגיבוי<input id="imp" class="vh" type="file" accept=".json,application/json"></label>
+<span id="xlmsg" class="mute"></span></section>
 <button class="g" id="reset">מחיקת כל הנתונים</button>
 </main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="vendor/xlsx-0.18.5.full.min.js"></script>
+<script src="vendor/supabase-2.118.0.js"></script>
+<script src="cloud.js"></script>
 <script>
 var KEY='agents-books-v1',D={agents:[],cases:[],pays:[],lines:[]};
 try{var st=localStorage.getItem(KEY);if(st)D=JSON.parse(st)||D;}catch(e){}
@@ -193,10 +238,16 @@ document.body.addEventListener('click',function(e){var t=e.target.getAttribute('
 $('reset').onclick=function(){if(confirm('למחוק הכול?')){D={agents:[],cases:[],pays:[],lines:[]};save();render()}};
 $('vat').oninput=function(){render();applyRO();saveVat()};$('fM').oninput=render;
 var DL=null,editId=null,editC=null,editP=null;
+function saveFile(name,data,type){
+ if(DL)return DL.save({filename:name,data:data});
+ if(window.claude)return Promise.reject({code:'unavailable'});
+ return new Promise(function(res){var u=URL.createObjectURL(new Blob([data],{type:type||'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})),a=document.createElement('a');
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000);res()})}
+function canDownload(){return !!DL||!window.claude}
 try{if(window.claude&&claude.use)claude.use('downloads').then(function(d){DL=d;if(!d)$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו. פתחי את הקישור של הכלי בדפדפן.'}).catch(function(){})}catch(e){}
 $('xl').onclick=function(){
  if(typeof XLSX==='undefined'){$('xlmsg').textContent='ספריית האקסל לא נטענה.';return}
- if(!DL){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
+ if(!canDownload()){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
  var r2=function(n){return Math.round(n*100)/100};
  var cn=function(id){var c=D.cases.filter(function(c){return c.id===id})[0];return c?c:null};
  var L=[['תאריך','סוכן/ת','חודש תיק','תיק','סוג','תיאור','סכום לפני מע״מ','אחוז מע״מ','סכום מע״מ','סכום כולל מע״מ']];
@@ -227,7 +278,7 @@ $('xl').onclick=function(){
  [['שורות',L],['סיכום חודשי',M],['סיכום תיקים',S],['סיכום סוכנים',A],['תשלומים והלוואות',P],['סיכום מעמ',V]].forEach(function(x){var ws=XLSX.utils.aoa_to_sheet(x[1]);ws['!cols']=x[1][0].map(function(){return{wch:20}});XLSX.utils.book_append_sheet(wb,ws,x[0])});
  wb.Workbook={Views:[{RTL:true}]};
  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
- DL.save({filename:'הנהלת-חשבונות-'+new Date().toISOString().slice(0,10)+'.xlsx',data:buf}).then(function(){$('xlmsg').textContent='הקובץ נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})};
+ saveFile('הנהלת-חשבונות-'+new Date().toISOString().slice(0,10)+'.xlsx',buf).then(function(){$('xlmsg').textContent='הקובץ נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})};
 function startEditP(id){var p=D.pays.filter(function(p){return p.id===id})[0];if(!p)return;
  editP=id;$('pA').value=p.agent;fillCases();$('pT').value=p.type;$('pC').value=p.caseId||'';$('pD').value=p.date||'';$('pS').value=p.amt;
  $('addP').textContent='שמירת תיקון';$('cancelP').style.display='';$('ph').textContent='תיקון תשלום / הלוואה';
@@ -247,7 +298,7 @@ function startEdit(id){var l=D.lines.filter(function(l){return l.id===id})[0];if
 function stopEdit(){editId=null;$('addL').textContent='הוספה';$('cancelL').style.display='none';$('lh').textContent='הוספת הכנסה או הוצאה';$('lN').value='';$('lA').value=''}
 $('cancelL').onclick=stopEdit;
 function exportCase(id){
- if(typeof XLSX==='undefined'||!DL){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
+ if(typeof XLSX==='undefined'||!canDownload()){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
  var r2=function(n){return Math.round(n*100)/100};
  var c=D.cases.filter(function(c){return c.id===id})[0],a=D.agents.filter(function(a){return a.id===c.agent})[0]||{pct:0,name:''};
  var x=cc(id),sh=x.profit*a.pct/100,ps=D.pays.filter(function(p){return p.caseId===id}),pd=ps.reduce(function(t,p){return t+((p.type==='adv'||p.type==='fin')?p.amt:0)},0);
@@ -262,13 +313,33 @@ function exportCase(id){
  [['סגירת תיק',A],['שורות',L],['תשלומים',P]].forEach(function(z){var ws=XLSX.utils.aoa_to_sheet(z[1]);ws['!cols']=[{wch:34},{wch:18},{wch:18},{wch:18},{wch:14},{wch:14},{wch:16}];XLSX.utils.book_append_sheet(wb,ws,z[0])});
  wb.Workbook={Views:[{RTL:true}]};
  var nm=('תיק-'+c.name+'-'+c.month).replace(/[\\\/:*?"<>|]/g,'');
- DL.save({filename:nm+'.xlsx',data:XLSX.write(wb,{bookType:'xlsx',type:'array'})}).then(function(){$('xlmsg').textContent='הקובץ נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})}
+ saveFile(nm+'.xlsx',XLSX.write(wb,{bookType:'xlsx',type:'array'})).then(function(){$('xlmsg').textContent='הקובץ נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})}
+$('bk').onclick=function(){
+ if(!canDownload()){$('xlmsg').textContent='הורדת קבצים לא זמינה בתצוגה הזו.';return}
+ var b=JSON.stringify({app:'trioagents-bookkeeping',version:1,exported:new Date().toISOString(),vat:parseFloat($('vat').value)||0,data:D},null,1);
+ saveFile('גיבוי-הנהלת-חשבונות-'+new Date().toISOString().slice(0,10)+'.json',new TextEncoder().encode(b),'application/json')
+  .then(function(){$('xlmsg').textContent='הגיבוי נשמר.'}).catch(function(err){$('xlmsg').textContent=(err&&err.code==='declined')?'':'השמירה לא הצליחה.'})};
+$('imp').onchange=function(){var fl=this.files&&this.files[0];this.value='';if(!fl)return;
+ if(!CANW){$('xlmsg').textContent='אין הרשאת עריכה.';return}
+ fl.text().then(function(t){var o=JSON.parse(t),d=o&&o.data;
+  var ok=d&&['agents','cases','pays','lines'].every(function(k){return Array.isArray(d[k])&&d[k].every(function(x){return x&&typeof x.id==='string'&&x.id})});
+  if(!ok){$('xlmsg').textContent='הקובץ לא נראה כמו גיבוי של הכלי הזה.';return}
+  if(!confirm('השחזור מחליף את כל הנתונים הנוכחיים בנתונים מהגיבוי ('+d.agents.length+' סוכנים, '+d.cases.length+' תיקים, '+d.lines.length+' שורות, '+d.pays.length+' תשלומים). להמשיך?'))return;
+  D={agents:d.agents,cases:d.cases,pays:d.pays,lines:d.lines};
+  if(typeof o.vat==='number'){$('vat').value=o.vat;saveVat()}
+  save();render();applyRO();$('xlmsg').textContent='הנתונים שוחזרו מהגיבוי.'
+ }).catch(function(){$('xlmsg').textContent='לא ניתן לקרוא את הקובץ.'})};
+var CLOUD=!!(window.Cloud&&Cloud.enabled);
 (async function(){
  try{
-  var db=window.claude&&claude.use?await claude.use('db'):null;
+  var db;
+  if(CLOUD){db=await Cloud.start()}
+  else{
+  db=window.claude&&claude.use?await claude.use('db'):null;
   if(!db){setBanner('עבודה מקומית בלבד: הנתונים נשמרים רק בדפדפן הזה ולא משותפים.');return}
   var us=await claude.use('user');
   if(us){var cw=await us.can('data.write');if(cw===false)CANW=false}
+  }
   var LOCAL=D,a0=await db.collection('agents').get(),c0=await db.collection('cases').get();
   DB=db;
   if(a0.empty&&c0.empty&&LOCAL.agents.length&&CANW){D=LOCAL;save()}
@@ -279,7 +350,7 @@ function exportCase(id){
   db.doc('settings/main').onSnapshot(function(d){if(d.exists){var v=d.data().vat;if(typeof v==='number'&&document.activeElement!==$('vat')){$('vat').value=v;render();applyRO()}}},werr);
   setBanner(CANW?'הנתונים משותפים: כל מי שהוזמנה ומחוברת רואה את אותם נתונים, והשינויים מתעדכנים מיד.':'יש לך הרשאת צפייה בלבד. אפשר לייצא לאקסל אבל לא לשנות נתונים.',!CANW);
   applyRO();
- }catch(e){setBanner('לא ניתן להתחבר לנתונים המשותפים, עובדים מקומית בלבד.',1)}
+ }catch(e){if(CLOUD){CANW=false;DB={};applyRO();setBanner('לא ניתן להתחבר לנתונים המשותפים. רעננו את הדף.',1)}else setBanner('לא ניתן להתחבר לנתונים המשותפים, עובדים מקומית בלבד.',1)}
 })();
 render();
 </script>

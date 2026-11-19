@@ -11,37 +11,57 @@ It tracks:
 - **Payments** to agents: advances, final payments, loans and loan repayments.
 - **Summaries**: per agent, per month and overall, including VAT to pay and what is still owed to each agent.
 
-There are two ways to use it: a browser app and an Excel template.
+There are two ways to use it: a web app (online, shared by several users) and an Excel template.
 
 ## Project structure
 
 ```
 TrioAgents/
-├── app/
-│   └── index.html                  # The full browser app (HTML + CSS + JavaScript in one file)
+├── app/                               # The web app (this folder is what Vercel publishes)
+│   ├── index.html                     # The app: screens, calculations, Excel export
+│   ├── cloud.js                       # Online mode: login, admin approval, shared data, live updates
+│   ├── config.js                      # Supabase address and public key (fill in once)
+│   ├── vercel.json                    # Hosting settings (security headers)
+│   └── vendor/                        # Libraries: supabase-js 2.118.0, SheetJS 0.18.5
+├── supabase/
+│   └── schema.sql                     # Database tables and security rules (run once in Supabase)
+├── docs/
+│   └── SETUP.md                       # Step-by-step: Supabase, Google login, email, Vercel
 ├── legacy/
-│   └── first-version.html          # First, simpler version (income/expenses + VAT + 50/50, 60/40 split)
+│   └── first-version.html             # First, simpler version, kept for reference
 ├── excel/
-│   ├── scripts/
-│   │   └── build_excel_template.py # Generates the Excel template with openpyxl
-│   └── template/
-│       └── bookkeeping-shared.xlsx # Ready-made Excel template with formulas (example data only)
-├── requirements.txt                # Python dependencies for the Excel script
-├── .gitignore
-├── .gitattributes
-├── .editorconfig
+│   ├── scripts/build_excel_template.py
+│   └── template/bookkeeping-shared.xlsx
+├── .github/workflows/
+│   └── keep-supabase-awake.yml        # Stops the free database from pausing
+├── requirements.txt                   # Python dependency for the Excel script
 └── README.md
 ```
 
-## Browser app
+## Web app
 
-Open `app/index.html` in any modern browser. No server or install needed.
+### Online (shared)
 
-- It loads the Heebo font from Google Fonts and SheetJS (`xlsx` 0.18.5) from cdnjs, so it needs internet access.
-- Data is saved in the browser's `localStorage` (key `agents-books-v1`). It stays on that browser and device only;
-  clearing site data deletes it.
-- The shared database (several people seeing the same data) and the **Excel download** button use the Claude
-  artifact runtime (`window.claude`) and only work when the page runs as a Claude artifact.
+With Supabase connected (see **[docs/SETUP.md](docs/SETUP.md)**):
+
+- Users log in with **Google** or a **code sent by email**.
+- New users wait until an **admin approves them once**. The first user to log in is the admin.
+- All approved users see and edit the same data. Changes appear for everyone **immediately**.
+- The database enforces access, not just the screen: logged-out or unapproved users get no data.
+- Admins can manage users, restore from a backup, and delete all data. Other users can't.
+
+### Without the online database
+
+If `app/config.js` has no Supabase address, the app works as before:
+
+- **Opened directly in a browser:** data is saved only in that browser (`localStorage`).
+- **Run as a Claude artifact:** it uses Claude's shared database.
+
+### Export and backup
+
+- **ייצוא לאקסל** downloads an Excel report. Each case can also be exported on its own.
+- **הורדת גיבוי (JSON)** downloads all data.
+- **שחזור מגיבוי** (admins) loads a backup back in.
 
 `legacy/first-version.html` is the original, simpler version, kept for reference.
 

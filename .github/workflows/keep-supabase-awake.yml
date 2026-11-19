@@ -1,0 +1,28 @@
+# Free Supabase projects pause after 7 days without activity.
+# This pings the database every 3 days so the app stays available.
+# It reads the URL and public key from app/config.js; nothing to configure.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: "17 5 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: app/config.js
+          sparse-checkout-cone-mode: false
+      - name: Ping database
+        run: |
+          url=$(sed -n "s/^ *supabaseUrl: *'\([^']*\)'.*/\1/p" app/config.js)
+          key=$(sed -n "s/^ *supabaseKey: *'\([^']*\)'.*/\1/p" app/config.js)
+          if [ -z "$url" ] || [ -z "$key" ]; then echo "Supabase not configured in app/config.js yet, skipping."; exit 0; fi
+          curl -fsS -X POST "$url/rest/v1/rpc/ping" -H "apikey: $key" -H "Content-Type: application/json" -d '{}'
+          echo
