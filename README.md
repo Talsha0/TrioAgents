@@ -65,9 +65,12 @@ Choose an action (**ייצוא** / **ייבוא**) and a format (**אקסל** / 
   "נתונים - …" data sheets that make the file importable again.
 - **Export to JSON:** a full backup of all data.
 - **Import (Excel or JSON):** replaces all current data for every user, after asking.
-  Any approved user can import. Excel import needs the "נתונים" sheets, so it only accepts
-  files exported by this app (after this feature was added). The data sheets can be edited in
-  Excel as long as the headers and ID columns stay as they are.
+  Any approved user can import. Excel files with the "נתונים" sheets import exactly; the data sheets
+  can be edited in Excel as long as the headers and ID columns stay as they are.
+- **Older Excel exports** (report sheets only) can be imported too: the data is rebuilt from the
+  "שורות", "סיכום תיקים", "סיכום סוכנים" and "תשלומים והלוואות" sheets. Amounts may differ by an agora
+  from rounding, an agent with no cases gets 0% (the file doesn't contain it), and a payment is matched
+  to its case by name, so two cases with the same name for one agent need checking. The app warns about each.
 - Each case can still be exported on its own from its row. Those files are reports only and can't be imported.
 
 `legacy/first-version.html` is the original, simpler version, kept for reference.

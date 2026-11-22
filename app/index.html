@@ -355,7 +355,8 @@ function str(v){return v==null?'':String(v).trim()}
 function readXlsx(buf){
  var wb=XLSX.read(buf,{type:'array',cellDates:true}),miss=[];
  ['agents','cases','lines','pays'].forEach(function(k){if(!wb.Sheets[DS[k]])miss.push(DS[k])});
- if(miss.length)throw new Error('בקובץ חסרים הגיליונות: '+miss.join(', ')+'. אפשר לייבא רק קובץ אקסל שיוצא מהכלי הזה (אחרי העדכון שהוסיף את גיליונות "נתונים").');
+ if(miss.length){if(wb.Sheets['שורות']&&wb.Sheets['סיכום תיקים'])return readReportXlsx(wb);
+  throw new Error('בקובץ חסרים הגיליונות: '+miss.join(', ')+'. אפשר לייבא רק קובץ אקסל מלא שיוצא מהכלי הזה (לא ייצוא של תיק בודד).')}
  var get=function(k){return XLSX.utils.sheet_to_json(wb.Sheets[DS[k]],{header:1,raw:true,defval:''}).slice(1).filter(function(r){return r.some(function(c){return str(c)!==''})})};
  var bad=[],need=function(ok,where){if(!ok)bad.push(where)},inv=function(m){var o={};Object.keys(m).forEach(function(k){o[m[k]]=k});return o},TI=inv(TYPE_L),PI=inv(PAY_L);
  var d={
@@ -366,11 +367,42 @@ function readXlsx(buf){
  if(bad.length)throw new Error('יש שורות לא תקינות: '+bad.slice(0,5).join(', ')+(bad.length>5?' ועוד '+(bad.length-5):''));
  var vat;if(wb.Sheets[DS.set]){XLSX.utils.sheet_to_json(wb.Sheets[DS.set],{header:1,raw:true}).forEach(function(r){if(str(r[0])==='אחוז מע״מ'&&!isNaN(num(r[1])))vat=num(r[1])})}
  return{vat:vat,data:d}}
+// Older Excel exports have report sheets only (no IDs). Rebuild the data from them.
+function readReportXlsx(wb){
+ var rows=function(n){var ws=wb.Sheets[n];if(!ws)return[];var a=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}),h=(a[0]||[]).map(str);
+  return a.slice(1).filter(function(r){return r.some(function(c){return str(c)!==''})}).map(function(r){var o={};h.forEach(function(k,i){o[k]=r[i]});return o})};
+ var d={agents:[],cases:[],lines:[],pays:[]},A={},K={},bad=[],amb=0,vat;
+ function agent(name,pct){name=str(name);if(!name)return'';var a=A[name],p=num(pct);
+  if(!a){a=A[name]={id:uid(),name:name,pct:p};d.agents.push(a)}else if(isNaN(a.pct)&&!isNaN(p))a.pct=p;return a.id}
+ function kase(an,month,name,closed){var aid=agent(an);if(!aid)return'';name=str(name)||'תיק';var k=aid+'|'+month+'|'+name,c=K[k];
+  if(!c){c=K[k]={id:uid(),agent:aid,month:month,name:name,closed:!!closed};d.cases.push(c)}else if(closed)c.closed=true;return c.id}
+ rows('סיכום תיקים').forEach(function(r){agent(r['סוכן/ת'],r['אחוז סוכן (%)']);kase(r['סוכן/ת'],cellDate(r['חודש'],1),r['תיק'],str(r['סטטוס'])==='סגור')});
+ rows('סיכום סוכנים').forEach(function(r){agent(r['סוכן/ת'])});
+ rows('שורות').forEach(function(r,i){var ty=str(r['סוג']),type=ty==='הכנסה'?'inc':ty==='הוצאה'?'exp':'',rate=num(r['אחוז מע״מ']),net=num(r['סכום לפני מע״מ']),gross=num(r['סכום כולל מע״מ']);
+  if(!type||isNaN(net)){bad.push('שורות, שורה '+(i+2));return}
+  if(rate>1)rate=rate/100;
+  if(rate>0&&vat===undefined)vat=Math.round(rate*1000)/10;
+  var an=str(r['סוכן/ת']),cn=str(r['תיק']),cid=an&&cn&&cn!=='כללי'?kase(an,cellDate(r['חודש תיק'],1),cn):'',z=!(rate>0);
+  d.lines.push({id:uid(),caseId:cid,type:type,date:cellDate(r['תאריך']),desc:str(r['תיאור']),amt:z?net:(isNaN(gross)?Math.round(net*(1+rate)*100)/100:gross),incl:z?'0':'1',rate:z?'z':'s'})});
+ var PI={};Object.keys(PAY_L).forEach(function(k){PI[PAY_L[k]]=k});
+ rows('תשלומים והלוואות').forEach(function(r,i){var t=PI[str(r['סוג'])],amt=num(r['סכום']),aid=agent(r['סוכן/ת']);
+  if(!t||isNaN(amt)||!aid){bad.push('תשלומים והלוואות, שורה '+(i+2));return}
+  var cn=str(r['תיק']),cid='';
+  if(cn&&(t==='adv'||t==='fin')){var m=d.cases.filter(function(c){return c.agent===aid&&c.name===cn}).sort(function(x,y){return x.month<y.month?-1:1});
+   if(m.length>1)amb++;cid=m.length?m[m.length-1].id:kase(r['סוכן/ת'],'',cn)}
+  d.pays.push({id:uid(),agent:aid,type:t,caseId:cid,date:cellDate(r['תאריך']),amt:amt})});
+ if(bad.length)throw new Error('יש שורות לא תקינות: '+bad.slice(0,5).join('; ')+(bad.length>5?' ועוד '+(bad.length-5):''));
+ if(!d.agents.length&&!d.lines.length)throw new Error('לא נמצאו נתונים בקובץ.');
+ var nopct=d.agents.filter(function(a){return isNaN(a.pct)});nopct.forEach(function(a){a.pct=0});
+ var note='זה קובץ אקסל בפורמט הישן (דוחות בלבד), והנתונים נבנים מחדש ממנו. סכומים עשויים להיות שונים באגורות בגלל עיגול.';
+ if(nopct.length)note+=' לא נמצא אחוז רווח עבור: '+nopct.map(function(a){return a.name}).join(', ')+' (הוגדר 0%, אפשר לתקן אחר כך).';
+ if(amb)note+=' '+amb+' תשלומים שויכו לתיק לפי שם, ויש כמה תיקים באותו שם (שויכו לחודש האחרון). כדאי לבדוק.';
+ return{vat:vat,data:d,note:note}}
 function readJson(text){var o=JSON.parse(text),d=o&&o.data;
  var ok=d&&['agents','cases','pays','lines'].every(function(k){return Array.isArray(d[k])&&d[k].every(function(x){return x&&typeof x.id==='string'&&x.id})});
  if(!ok)throw new Error('הקובץ לא נראה כמו גיבוי של הכלי הזה.');return{vat:o.vat,data:d}}
 function applyImport(o){var d=o.data;
- if(!confirm('הייבוא מחליף את כל הנתונים הנוכחיים, אצל כל המשתמשים, בנתונים מהקובץ ('+d.agents.length+' סוכנים, '+d.cases.length+' תיקים, '+d.lines.length+' שורות, '+d.pays.length+' תשלומים). להמשיך?'))return;
+ if(!confirm((o.note?o.note+'\n\n':'')+'הייבוא מחליף את כל הנתונים הנוכחיים, אצל כל המשתמשים, בנתונים מהקובץ ('+d.agents.length+' סוכנים, '+d.cases.length+' תיקים, '+d.lines.length+' שורות, '+d.pays.length+' תשלומים). להמשיך?'))return;
  D={agents:d.agents,cases:d.cases,pays:d.pays,lines:d.lines};
  if(typeof o.vat==='number'){$('vat').value=o.vat;saveVat()}
  save();render();applyRO();$('xlmsg').textContent='הנתונים יובאו מהקובץ.'}
@@ -385,7 +417,7 @@ $('imp').onchange=function(){var fl=this.files&&this.files[0];this.value='';if(!
 function ioUpdate(){var imp=$('ioAct').value==='imp',x=$('ioFmt').value==='xlsx';
  $('ioGo').textContent=imp?(x?'ייבוא מאקסל':'ייבוא מקובץ JSON'):(x?'ייצוא לאקסל':'ייצוא לקובץ JSON');
  $('ioHelp').textContent=imp
-  ?'הייבוא מחליף את כל הנתונים הנוכחיים אצל כל המשתמשים (תופיע בקשת אישור). '+(x?'אפשר לייבא רק קובץ אקסל שיוצא מהכלי הזה.':'אפשר לייבא רק קובץ JSON שיוצא מהכלי הזה.')
+  ?'הייבוא מחליף את כל הנתונים הנוכחיים אצל כל המשתמשים (תופיע בקשת אישור). '+(x?'אפשר לייבא קובץ אקסל שיוצא מהכלי הזה, גם בפורמט הישן (דוחות בלבד).':'אפשר לייבא רק קובץ JSON שיוצא מהכלי הזה.')
   :(x?'קובץ אקסל עם דוחות (שורות, סיכומים, תשלומים) וגיליונות "נתונים" שמאפשרים לייבא אותו בחזרה.':'קובץ גיבוי מלא של כל הנתונים. מומלץ לשמור עותק פעם בחודש.');
  $('ioGo').disabled=imp&&!CANW;$('xlmsg').textContent=''}
 $('ioAct').onchange=ioUpdate;$('ioFmt').onchange=ioUpdate;

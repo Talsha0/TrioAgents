@@ -130,7 +130,7 @@ If you don't want email login at all, set `loginWithEmail: false` in `app/config
 2. You go straight in as the admin.
 3. If you already have data in the old version, export it there (Excel or JSON), then in the new site
    choose **ייבוא** in the **ייבוא וייצוא** section and pick that file.
-   Excel only works for files exported after the import feature was added. Otherwise use JSON.
+   Older Excel exports work too (the data is rebuilt from the report sheets); JSON is the most exact.
 
 ## 9. Add your users
 
