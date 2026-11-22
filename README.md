@@ -48,7 +48,7 @@ With Supabase connected (see **[docs/SETUP.md](docs/SETUP.md)**):
 - New users wait until an **admin approves them once**. The first user to log in is the admin.
 - All approved users see and edit the same data. Changes appear for everyone **immediately**.
 - The database enforces access, not just the screen: logged-out or unapproved users get no data.
-- Admins can manage users, restore from a backup, and delete all data. Other users can't.
+- Any approved user can restore from a backup. Only admins can manage users and delete all data.
 
 ### Without the online database
 
@@ -61,7 +61,7 @@ If `app/config.js` has no Supabase address, the app works as before:
 
 - **ייצוא לאקסל** downloads an Excel report. Each case can also be exported on its own.
 - **הורדת גיבוי (JSON)** downloads all data.
-- **שחזור מגיבוי** (admins) loads a backup back in.
+- **שחזור מגיבוי** loads a backup back in, replacing the current data for everyone (it asks first).
 
 `legacy/first-version.html` is the original, simpler version, kept for reference.
 

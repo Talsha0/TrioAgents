@@ -203,7 +203,7 @@
     $('ubar').hidden = false;
     $('uName').textContent = profile.full_name ? profile.full_name + ' (' + (profile.email || '') + ')' : (profile.email || '');
     if (!profile.is_admin) {
-      ['reset', 'impWrap'].forEach(function (id) { if ($(id)) $(id).hidden = true; });
+      if ($('reset')) $('reset').hidden = true;
       return;
     }
     $('uAdmin').hidden = false;
