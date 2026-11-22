@@ -48,7 +48,7 @@ With Supabase connected (see **[docs/SETUP.md](docs/SETUP.md)**):
 - New users wait until an **admin approves them once**. The first user to log in is the admin.
 - All approved users see and edit the same data. Changes appear for everyone **immediately**.
 - The database enforces access, not just the screen: logged-out or unapproved users get no data.
-- Any approved user can restore from a backup. Only admins can manage users and delete all data.
+- Any approved user can import data from Excel or JSON. Only admins can manage users and delete all data.
 
 ### Without the online database
 
@@ -57,11 +57,18 @@ If `app/config.js` has no Supabase address, the app works as before:
 - **Opened directly in a browser:** data is saved only in that browser (`localStorage`).
 - **Run as a Claude artifact:** it uses Claude's shared database.
 
-### Export and backup
+### Import and export (ייבוא וייצוא)
 
-- **ייצוא לאקסל** downloads an Excel report. Each case can also be exported on its own.
-- **הורדת גיבוי (JSON)** downloads all data.
-- **שחזור מגיבוי** loads a backup back in, replacing the current data for everyone (it asks first).
+Choose an action (**ייצוא** / **ייבוא**) and a format (**אקסל** / **JSON**), then press the button.
+
+- **Export to Excel:** report sheets (rows, monthly, cases, agents, payments, VAT) plus
+  "נתונים - …" data sheets that make the file importable again.
+- **Export to JSON:** a full backup of all data.
+- **Import (Excel or JSON):** replaces all current data for every user, after asking.
+  Any approved user can import. Excel import needs the "נתונים" sheets, so it only accepts
+  files exported by this app (after this feature was added). The data sheets can be edited in
+  Excel as long as the headers and ID columns stay as they are.
+- Each case can still be exported on its own from its row. Those files are reports only and can't be imported.
 
 `legacy/first-version.html` is the original, simpler version, kept for reference.
 

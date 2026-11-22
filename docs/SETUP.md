@@ -128,8 +128,9 @@ If you don't want email login at all, set `loginWithEmail: false` in `app/config
 
 1. Open your Vercel address and log in. **You must be the first person to log in.**
 2. You go straight in as the admin.
-3. If you already have data in the old version, use **ייצוא וגיבוי → הורדת גיבוי (JSON)** there,
-   then **שחזור מגיבוי** in the new site to load it.
+3. If you already have data in the old version, export it there (Excel or JSON), then in the new site
+   choose **ייבוא** in the **ייבוא וייצוא** section and pick that file.
+   Excel only works for files exported after the import feature was added. Otherwise use JSON.
 
 ## 9. Add your users
 
@@ -153,7 +154,7 @@ Removing access takes effect immediately in the database.
   `.github/workflows/keep-supabase-awake.yml` pings the database every 3 days to prevent this, once
   `app/config.js` has your details and the workflow is on `main`. If it does pause, open the project in
   the Supabase dashboard and click **Restore**. No data is lost.
-- **Backups:** the free plan has no automatic backups. Download **הורדת גיבוי (JSON)** regularly
+- **Backups:** the free plan has no automatic backups. Export a backup regularly (**ייבוא וייצוא → ייצוא**, Excel or JSON)
   (for example monthly) and keep it somewhere safe.
 - **Two people editing the same record at the same moment:** the last save wins.
   Different records never conflict.
